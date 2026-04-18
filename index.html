@@ -1,0 +1,733 @@
+<head>
+<meta charset="UTF-8" />
+</head>
+import React, { useState, useEffect, useMemo } from 'react';
+import { ShoppingCart, ListOrdered, Plus, Minus, Trash2, X, Clock, CheckCircle2 } from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, addDoc, onSnapshot } from 'firebase/firestore';
+
+// --- Firebase Initialization ---
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+// --- Menu Data ---
+const menuItems = [
+  { id: 'm1', name: '肉鬆飯捲', en: 'Pork floss', price: 50 },
+  { id: 'm2', name: '脆麵飯捲', en: 'Fleshy', price: 50 },
+  { id: 'm3', name: '火腿飯捲', en: 'Ham', price: 50 },
+  { id: 'm4', name: '熱狗飯捲', en: 'Hot dog', price: 50 },
+  { id: 'm5', name: '蟹條飯捲', en: 'Crab stick', price: 50 },
+  { id: 'm6', name: '韓式泡菜飯捲', en: 'Kimchi', price: 55 },
+  { id: 'm7', name: '培根飯捲', en: 'Bacon', price: 55 },
+  { id: 'm8', name: '薯餅飯捲', en: 'Potato cake', price: 55 },
+  { id: 'm9', name: '鮪魚飯捲', en: 'Tuna', price: 60 },
+  { id: 'm10', name: '夏威夷飯捲', en: 'Ham pineapple', price: 65 },
+  { id: 'm11', name: '燻雞肉飯捲', en: 'Smoked chicken', price: 65 },
+  { id: 'm12', name: '日式燒鰻飯捲', en: 'Grilled eel', price: 70 },
+  { id: 'm13', name: '辣子雞肉飯捲', en: 'Spicy chicken', price: 65 },
+  { id: 'm14', name: '檸檬雞柳飯捲', en: 'Lemon chicken', price: 65 },
+  { id: 'm15', name: '辣味卡拉飯捲', en: 'Spicy karaoke', price: 65 },
+  { id: 'm16', name: '墨西哥辣椒雞飯捲', en: 'Jalapeno pepper chicken', price: 70 },
+  { id: 'm17', name: '起司豬排飯捲', en: 'Cheese pork', price: 65 },
+  { id: 'm18', name: '照燒豬肉飯捲', en: 'Teriyaki pork', price: 65 },
+  { id: 'm19', name: '打拋豬肉飯捲', en: 'Thai pork', price: 65 },
+  { id: 'm20', name: '黑胡椒豬柳飯捲', en: 'Pepper pork', price: 65 },
+];
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [cart, setCart] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [isViewingOrders, setIsViewingOrders] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState('');
+
+  // 1. Auth Init
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("Auth error:", error);import React, { useState, useEffect, useMemo } from 'react';
+import { ShoppingCart, ListOrdered, Plus, Minus, Trash2, X, Clock, CheckCircle2 } from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, addDoc, onSnapshot } from 'firebase/firestore';
+
+// --- Firebase Initialization ---
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+// --- Menu Data ---
+const menuItems = [
+  { id: 'm1', name: '肉鬆飯捲', en: 'Pork floss', price: 50 },
+  { id: 'm2', name: '脆麵飯捲', en: 'Fleshy', price: 50 },
+  { id: 'm3', name: '火腿飯捲', en: 'Ham', price: 50 },
+  { id: 'm4', name: '熱狗飯捲', en: 'Hot dog', price: 50 },
+  { id: 'm5', name: '蟹條飯捲', en: 'Crab stick', price: 50 },
+  { id: 'm6', name: '韓式泡菜飯捲', en: 'Kimchi', price: 55 },
+  { id: 'm7', name: '培根飯捲', en: 'Bacon', price: 55 },
+  { id: 'm8', name: '薯餅飯捲', en: 'Potato cake', price: 55 },
+  { id: 'm9', name: '鮪魚飯捲', en: 'Tuna', price: 60 },
+  { id: 'm10', name: '夏威夷飯捲', en: 'Ham pineapple', price: 65 },
+  { id: 'm11', name: '燻雞肉飯捲', en: 'Smoked chicken', price: 65 },
+  { id: 'm12', name: '日式燒鰻飯捲', en: 'Grilled eel', price: 70 },
+  { id: 'm13', name: '辣子雞肉飯捲', en: 'Spicy chicken', price: 65 },
+  { id: 'm14', name: '檸檬雞柳飯捲', en: 'Lemon chicken', price: 65 },
+  { id: 'm15', name: '辣味卡拉飯捲', en: 'Spicy karaoke', price: 65 },
+  { id: 'm16', name: '墨西哥辣椒雞飯捲', en: 'Jalapeno pepper chicken', price: 70 },
+  { id: 'm17', name: '起司豬排飯捲', en: 'Cheese pork', price: 65 },
+  { id: 'm18', name: '照燒豬肉飯捲', en: 'Teriyaki pork', price: 65 },
+  { id: 'm19', name: '打拋豬肉飯捲', en: 'Thai pork', price: 65 },
+  { id: 'm20', name: '黑胡椒豬柳飯捲', en: 'Pepper pork', price: 65 },
+];
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [cart, setCart] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [isViewingOrders, setIsViewingOrders] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState('');
+
+  // 動態加入 UTF-8 編碼設定，嘗試解決部署時的亂碼問題
+  useEffect(() => {
+    if (!document.querySelector('meta[charset]')) {
+      const metaCharset = document.createElement('meta');
+      metaCharset.setAttribute('charset', 'UTF-8');
+      document.head.prepend(metaCharset);
+    }
+  }, []);
+
+  // 1. Auth Init
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("Auth error:", error);
+      }
+    };
+    initAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Fetch Orders
+  useEffect(() => {
+    if (!user) return;
+
+    const ordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+    
+    const unsubscribe = onSnapshot(
+      ordersRef,
+      (snapshot) => {
+        const fetchedOrders = [];
+        snapshot.forEach((doc) => {
+          fetchedOrders.push({ id: doc.id, ...doc.data() });
+        });
+        // Sort by timestamp descending in memory (avoiding complex queries)
+        fetchedOrders.sort((a, b) => b.timestamp - a.timestamp);
+        setOrders(fetchedOrders);
+      },
+      (error) => {
+        console.error("Error fetching orders:", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // --- Cart Logic ---
+  const addToCart = (item) => {
+    setCart((prevCart) => {
+      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
+      if (existingItem) {
+        return prevCart.map((cartItem) =>
+          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
+        );
+      }
+      return [...prevCart, { ...item, quantity: 1 }];
+    });
+  };
+
+  const updateQuantity = (id, delta) => {
+    setCart((prevCart) =>
+      prevCart.map((item) => {
+        if (item.id === id) {
+          const newQuantity = item.quantity + delta;
+          return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
+        }
+        return item;
+      })
+    );
+  };
+
+  const removeFromCart = (id) => {
+    setCart((prevCart) => prevCart.filter((item) => item.id !== id));
+  };
+
+  const cartTotal = useMemo(() => {
+    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  }, [cart]);
+
+  const cartItemCount = useMemo(() => {
+    return cart.reduce((count, item) => count + item.quantity, 0);
+  }, [cart]);
+
+  // --- Checkout Logic ---
+  const handleCheckout = async () => {
+    if (!user || cart.length === 0) return;
+    setIsCheckingOut(true);
+
+    try {
+      const orderData = {
+        userId: user.uid,
+        items: cart,
+        totalAmount: cartTotal,
+        timestamp: Date.now(),
+        status: 'completed'
+      };
+
+      const ordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+      await addDoc(ordersRef, orderData);
+      
+      setCart([]);
+      setCheckoutMessage('訂單已成功送出！');
+      setTimeout(() => setCheckoutMessage(''), 3000);
+    } catch (error) {
+      console.error("Checkout failed:", error);
+      setCheckoutMessage('訂單送出失敗，請重試。');
+      setTimeout(() => setCheckoutMessage(''), 3000);
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('zh-TW', {
+      month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-orange-50 font-sans text-gray-800 flex flex-col">
+      {/* Header */}
+      <header className="bg-red-600 text-white shadow-md p-4 sticky top-0 z-10" >
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-bold flex items-center gap-2 tracking-wider">
+            <span>🍙</span> 美味飯捲點餐系統
+          </h1>
+          <button 
+            onClick={() => setIsViewingOrders(true)}
+            className="flex items-center gap-2 bg-red-700 hover:bg-red-800 px-4 py-2 rounded-lg transition-colors shadow-sm"
+          >
+            <ListOrdered size={20} />
+            <span className="hidden sm:inline">檢視所有訂單</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-grow max-w-6xl mx-auto w-full p-4 flex flex-col md:flex-row gap-6">
+        
+        {/* Menu Section */}
+        <section className="flex-grow md:w-2/3">
+          <h2 className="text-xl font-bold mb-4 text-red-700 border-b-2 border-red-200 pb-2">菜單品項</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {menuItems.map((item) => (
+              <div 
+                key={item.id} 
+                className="bg-white rounded-xl shadow-sm border border-orange-100 p-4 flex flex-col justify-between hover:shadow-md transition-shadow"
+              >
+                <div>
+                  <div className="flex justify-between items-start mb-1">
+                    <h3 className="text-lg font-bold text-gray-800">{item.name}</h3>
+                    <span className="text-lg font-bold text-red-600">${item.price}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 capitalize mb-3">{item.en}</p>
+                </div>
+                <button
+                  onClick={() => addToCart(item)}
+                  className="w-full bg-orange-100 hover:bg-orange-200 text-orange-800 font-semibold py-2 rounded-lg transition-colors flex justify-center items-center gap-1"
+                >
+                  <Plus size={16} /> 加入
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Cart Section */}
+        <section className="w-full md:w-1/3 bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col h-fit sticky top-24">
+          <div className="p-4 bg-orange-500 text-white rounded-t-2xl flex justify-between items-center">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <ShoppingCart size={22} />
+              目前點餐
+            </h2>
+            <span className="bg-white text-orange-600 font-bold px-2 py-1 rounded-full text-sm">
+              {cartItemCount} 項
+            </span>
+          </div>
+
+          <div className="p-4 flex-grow overflow-y-auto max-h-[50vh] md:max-h-[60vh]">
+            {cart.length === 0 ? (
+              <div className="text-center text-gray-400 py-10 flex flex-col items-center gap-2">
+                <ShoppingCart size={48} className="opacity-20" />
+                <p>購物車是空的</p>
+                <p className="text-sm">請從左側菜單選擇餐點</p>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {cart.map((item) => (
+                  <li key={item.id} className="flex flex-col border-b border-gray-100 pb-3 last:border-0">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-semibold">{item.name}</span>
+                      <span className="text-red-600 font-medium">${item.price * item.quantity}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1 border border-gray-200">
+                        <button 
+                          onClick={() => updateQuantity(item.id, -1)}
+                          className="p-1 hover:bg-gray-200 rounded text-gray-600 transition-colors"
+                          disabled={item.quantity <= 1}
+                        >
+                          <Minus size={16} />
+                        </button>
+                        <span className="w-6 text-center font-medium">{item.quantity}</span>
+                        <button 
+                          onClick={() => updateQuantity(item.id, 1)}
+                          className="p-1 hover:bg-gray-200 rounded text-gray-600 transition-colors"
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                      <button 
+                        onClick={() => removeFromCart(item.id)}
+                        className="text-gray-400 hover:text-red-500 transition-colors p-2"
+                        title="移除"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="p-4 bg-gray-50 border-t border-gray-200 rounded-b-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-lg font-bold text-gray-600">總計</span>
+              <span className="text-2xl font-bold text-red-600">${cartTotal}</span>
+            </div>
+            <button
+              onClick={handleCheckout}
+              disabled={cart.length === 0 || isCheckingOut || !user}
+              className={`w-full py-3 rounded-xl font-bold text-lg transition-all flex justify-center items-center gap-2 ${
+                cart.length === 0 || !user
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg'
+              }`}
+            >
+              {isCheckingOut ? (
+                <span className="animate-pulse">處理中...</span>
+              ) : (
+                <>送出訂單</>
+              )}
+            </button>
+            
+            {checkoutMessage && (
+              <div className="mt-3 p-2 bg-green-100 text-green-700 text-center rounded-lg text-sm flex items-center justify-center gap-1 font-medium">
+                <CheckCircle2 size={16} /> {checkoutMessage}
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+
+      {/* Orders View Modal */}
+      {isViewingOrders && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <ListOrdered className="text-red-600" />
+                訂單總覽
+              </h2>
+              <button 
+                onClick={() => setIsViewingOrders(false)}
+                className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-500"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-grow bg-gray-100/50">
+              {orders.length === 0 ? (
+                <div className="text-center py-20 text-gray-500 flex flex-col items-center gap-3">
+                  <Clock size={48} className="opacity-20" />
+                  <p className="text-lg">目前尚無任何訂單</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {orders.map((order) => (
+                    <div key={order.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                      <div className="flex justify-between items-start mb-3 border-b border-gray-100 pb-3">
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-400 font-mono">#{order.id.slice(0, 8)}</span>
+                          <span className="text-sm font-medium text-gray-600 flex items-center gap-1 mt-1">
+                            <Clock size={14} /> {formatTime(order.timestamp)}
+                          </span>
+                        </div>
+                        <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded">已完成</span>
+                      </div>
+                      <ul className="space-y-2 mb-4">
+                        {order.items.map((item, idx) => (
+                          <li key={idx} className="flex justify-between text-sm">
+                            <span>{item.name} <span className="text-gray-400">x{item.quantity}</span></span>
+                            <span className="text-gray-600">${item.price * item.quantity}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
+                        <span className="font-bold text-gray-600">總金額</span>
+                        <span className="text-lg font-bold text-red-600">${order.totalAmount}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+      }
+    };
+    initAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Fetch Orders
+  useEffect(() => {
+    if (!user) return;
+
+    const ordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+    
+    const unsubscribe = onSnapshot(
+      ordersRef,
+      (snapshot) => {
+        const fetchedOrders = [];
+        snapshot.forEach((doc) => {
+          fetchedOrders.push({ id: doc.id, ...doc.data() });
+        });
+        // Sort by timestamp descending in memory (avoiding complex queries)
+        fetchedOrders.sort((a, b) => b.timestamp - a.timestamp);
+        setOrders(fetchedOrders);
+      },
+      (error) => {
+        console.error("Error fetching orders:", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // --- Cart Logic ---
+  const addToCart = (item) => {
+    setCart((prevCart) => {
+      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
+      if (existingItem) {
+        return prevCart.map((cartItem) =>
+          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
+        );
+      }
+      return [...prevCart, { ...item, quantity: 1 }];
+    });
+  };
+
+  const updateQuantity = (id, delta) => {
+    setCart((prevCart) =>
+      prevCart.map((item) => {
+        if (item.id === id) {
+          const newQuantity = item.quantity + delta;
+          return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
+        }
+        return item;
+      })
+    );
+  };
+
+  const removeFromCart = (id) => {
+    setCart((prevCart) => prevCart.filter((item) => item.id !== id));
+  };
+
+  const cartTotal = useMemo(() => {
+    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  }, [cart]);
+
+  const cartItemCount = useMemo(() => {
+    return cart.reduce((count, item) => count + item.quantity, 0);
+  }, [cart]);
+
+  // --- Checkout Logic ---
+  const handleCheckout = async () => {
+    if (!user || cart.length === 0) return;
+    setIsCheckingOut(true);
+
+    try {
+      const orderData = {
+        userId: user.uid,
+        items: cart,
+        totalAmount: cartTotal,
+        timestamp: Date.now(),
+        status: 'completed'
+      };
+
+      const ordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+      await addDoc(ordersRef, orderData);
+      
+      setCart([]);
+      setCheckoutMessage('訂單已成功送出！');
+      setTimeout(() => setCheckoutMessage(''), 3000);
+    } catch (error) {
+      console.error("Checkout failed:", error);
+      setCheckoutMessage('訂單送出失敗，請重試。');
+      setTimeout(() => setCheckoutMessage(''), 3000);
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('zh-TW', {
+      month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-orange-50 font-sans text-gray-800 flex flex-col">
+      {/* Header */}
+      <header className="bg-red-600 text-white shadow-md p-4 sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-bold flex items-center gap-2 tracking-wider">
+            <span>🍙</span> 美味飯捲點餐系統
+          </h1>
+          <button 
+            onClick={() => setIsViewingOrders(true)}
+            className="flex items-center gap-2 bg-red-700 hover:bg-red-800 px-4 py-2 rounded-lg transition-colors shadow-sm"
+          >
+            <ListOrdered size={20} />
+            <span className="hidden sm:inline">檢視所有訂單</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-grow max-w-6xl mx-auto w-full p-4 flex flex-col md:flex-row gap-6">
+        
+        {/* Menu Section */}
+        <section className="flex-grow md:w-2/3">
+          <h2 className="text-xl font-bold mb-4 text-red-700 border-b-2 border-red-200 pb-2">菜單品項</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {menuItems.map((item) => (
+              <div 
+                key={item.id} 
+                className="bg-white rounded-xl shadow-sm border border-orange-100 p-4 flex flex-col justify-between hover:shadow-md transition-shadow"
+              >
+                <div>
+                  <div className="flex justify-between items-start mb-1">
+                    <h3 className="text-lg font-bold text-gray-800">{item.name}</h3>
+                    <span className="text-lg font-bold text-red-600">${item.price}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 capitalize mb-3">{item.en}</p>
+                </div>
+                <button
+                  onClick={() => addToCart(item)}
+                  className="w-full bg-orange-100 hover:bg-orange-200 text-orange-800 font-semibold py-2 rounded-lg transition-colors flex justify-center items-center gap-1"
+                >
+                  <Plus size={16} /> 加入
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Cart Section */}
+        <section className="w-full md:w-1/3 bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col h-fit sticky top-24">
+          <div className="p-4 bg-orange-500 text-white rounded-t-2xl flex justify-between items-center">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <ShoppingCart size={22} />
+              目前點餐
+            </h2>
+            <span className="bg-white text-orange-600 font-bold px-2 py-1 rounded-full text-sm">
+              {cartItemCount} 項
+            </span>
+          </div>
+
+          <div className="p-4 flex-grow overflow-y-auto max-h-[50vh] md:max-h-[60vh]">
+            {cart.length === 0 ? (
+              <div className="text-center text-gray-400 py-10 flex flex-col items-center gap-2">
+                <ShoppingCart size={48} className="opacity-20" />
+                <p>購物車是空的</p>
+                <p className="text-sm">請從左側菜單選擇餐點</p>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {cart.map((item) => (
+                  <li key={item.id} className="flex flex-col border-b border-gray-100 pb-3 last:border-0">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-semibold">{item.name}</span>
+                      <span className="text-red-600 font-medium">${item.price * item.quantity}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1 border border-gray-200">
+                        <button 
+                          onClick={() => updateQuantity(item.id, -1)}
+                          className="p-1 hover:bg-gray-200 rounded text-gray-600 transition-colors"
+                          disabled={item.quantity <= 1}
+                        >
+                          <Minus size={16} />
+                        </button>
+                        <span className="w-6 text-center font-medium">{item.quantity}</span>
+                        <button 
+                          onClick={() => updateQuantity(item.id, 1)}
+                          className="p-1 hover:bg-gray-200 rounded text-gray-600 transition-colors"
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                      <button 
+                        onClick={() => removeFromCart(item.id)}
+                        className="text-gray-400 hover:text-red-500 transition-colors p-2"
+                        title="移除"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="p-4 bg-gray-50 border-t border-gray-200 rounded-b-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-lg font-bold text-gray-600">總計</span>
+              <span className="text-2xl font-bold text-red-600">${cartTotal}</span>
+            </div>
+            <button
+              onClick={handleCheckout}
+              disabled={cart.length === 0 || isCheckingOut || !user}
+              className={`w-full py-3 rounded-xl font-bold text-lg transition-all flex justify-center items-center gap-2 ${
+                cart.length === 0 || !user
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg'
+              }`}
+            >
+              {isCheckingOut ? (
+                <span className="animate-pulse">處理中...</span>
+              ) : (
+                <>送出訂單</>
+              )}
+            </button>
+            
+            {checkoutMessage && (
+              <div className="mt-3 p-2 bg-green-100 text-green-700 text-center rounded-lg text-sm flex items-center justify-center gap-1 font-medium">
+                <CheckCircle2 size={16} /> {checkoutMessage}
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+
+      {/* Orders View Modal */}
+      {isViewingOrders && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <ListOrdered className="text-red-600" />
+                訂單總覽
+              </h2>
+              <button 
+                onClick={() => setIsViewingOrders(false)}
+                className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-500"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-grow bg-gray-100/50">
+              {orders.length === 0 ? (
+                <div className="text-center py-20 text-gray-500 flex flex-col items-center gap-3">
+                  <Clock size={48} className="opacity-20" />
+                  <p className="text-lg">目前尚無任何訂單</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {orders.map((order) => (
+                    <div key={order.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                      <div className="flex justify-between items-start mb-3 border-b border-gray-100 pb-3">
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-400 font-mono">#{order.id.slice(0, 8)}</span>
+                          <span className="text-sm font-medium text-gray-600 flex items-center gap-1 mt-1">
+                            <Clock size={14} /> {formatTime(order.timestamp)}
+                          </span>
+                        </div>
+                        <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded">已完成</span>
+                      </div>
+                      <ul className="space-y-2 mb-4">
+                        {order.items.map((item, idx) => (
+                          <li key={idx} className="flex justify-between text-sm">
+                            <span>{item.name} <span className="text-gray-400">x{item.quantity}</span></span>
+                            <span className="text-gray-600">${item.price * item.quantity}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
+                        <span className="font-bold text-gray-600">總金額</span>
+                        <span className="text-lg font-bold text-red-600">${order.totalAmount}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
